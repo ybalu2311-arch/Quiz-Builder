@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz Builder</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+  <h1>Quiz Builder</h1>
+  <p>Create and play interactive quizzes</p>
+</header>
+
+<div class="topbar">
+  <button class="dark-btn" onclick="darkMode()">
+    🌙 Dark Mode
+  </button>
+</div>
+
+<main class="container">
+
+  <section id="builder">
+
+    <div class="card">
+
+      <h2>Quiz Details</h2>
+
+      <label>Quiz Title</label>
+      <input
+        id="title"
+        type="text"
+        placeholder="Enter quiz title"
+      >
+
+      <label>Description</label>
+      <textarea
+        id="desc"
+        placeholder="Enter description"
+      ></textarea>
+
+      <label class="check">
+        <input
+          type="checkbox"
+          id="random"
+        >
+        Randomize questions
+      </label>
+
+      <label class="check">
+        <input
+          type="checkbox"
+          id="useTimer"
+        >
+        Enable timer
+      </label>
+
+      <input
+        id="minutes"
+        type="number"
+        value="10"
+        min="1"
+        placeholder="Minutes"
+      >
+
+    </div>
+
+    <div class="card">
+
+      <h2 id="qHead">Add Question</h2>
+
+      <label>Question</label>
+
+      <textarea
+        id="qText"
+        placeholder="Enter question"
+      ></textarea>
+
+      <label>Question Type</label>
+
+      <select
+        id="qType"
+        onchange="typeUI()"
+      >
+
+        <option value="mcq">
+          Multiple Choice
+        </option>
+
+        <option value="tf">
+          True / False
+        </option>
+
+        <option value="open">
+          Open Ended
+        </option>
+
+      </select>
+
+      <div id="answers"></div>
+
+      <button
+        class="green"
+        onclick="saveQuestion()"
+      >
+        Add Question
+      </button>
+
+      <button
+        id="cancel"
+        class="gray hide"
+        onclick="cancelEdit()"
+      >
+        Cancel
+      </button>
+
+    </div>
+
+    <div class="card">
+
+      <h2>Quiz Preview</h2>
+
+      <div id="preview">
+        <p>No questions yet.</p>
+      </div>
+
+    </div>
+
+    <div class="card">
+
+      <h2>Quiz Actions</h2>
+
+      <button onclick="play()">
+        ▶ Play Quiz
+      </button>
+
+      <button
+        class="dark-btn"
+        onclick="share()"
+      >
+        🔗 Copy Share Link
+      </button>
+
+      <button
+        class="red"
+        onclick="clearQuiz()"
+      >
+        🗑 Clear Quiz
+      </button>
+
+      <p id="msg"></p>
+
+    </div>
+
+    <div class="card">
+
+      <h2>Student Result History</h2>
+
+      <div id="history">
+        <p>No results yet.</p>
+      </div>
+
+    </div>
+
+  </section>
+
+  <section
+    id="player"
+    class="hide"
+  >
+
+    <div class="card">
+
+      <div class="play-top">
+
+        <div>
+
+          <h2 id="playTitle"></h2>
+
+          <p id="playDesc"></p>
+
+        </div>
+
+        <div
+          id="timer"
+          class="timer"
+        >
+          00:00
+        </div>
+
+      </div>
+
+      <label>Student Name</label>
+
+      <input
+        id="studentName"
+        type="text"
+        placeholder="Enter student name"
+      >
+
+      <label>Student ID</label>
+
+      <input
+        id="studentId"
+        type="text"
+        placeholder="Enter student ID"
+      >
+
+      <div class="progress-wrap">
+
+        <div
+          id="bar"
+          class="progress-bar"
+        ></div>
+
+      </div>
+
+      <p
+        id="progress"
+        class="small"
+      >
+        Answered: 0
+      </p>
+
+      <div id="questionArea"></div>
+
+      <div class="navigation">
+
+        <button
+          id="prev"
+          class="gray"
+          onclick="prev()"
+        >
+          ← Previous
+        </button>
+
+        <button
+          id="next"
+          onclick="next()"
+        >
+          Next →
+        </button>
+
+        <button
+          id="submit"
+          class="green hide"
+          onclick="submitQuiz()"
+        >
+          ✓ Submit
+        </button>
+
+      </div>
+
+      <button
+        class="dark-btn"
+        onclick="back()"
+      >
+        ← Back
+      </button>
+
+    </div>
+
+    <div
+      id="result"
+      class="card hide"
+    ></div>
+
+  </section>
+
+</main>
+
+<script src="script.js"></script>
+
+</body>
+</html>
