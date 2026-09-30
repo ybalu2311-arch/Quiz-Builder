@@ -1,277 +1,110 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quiz Builder</title>
-  <link rel="stylesheet" href="style.css">
+    <title>Quiz Builder</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-<header>
-  <h1>Quiz Builder</h1>
-  <p>Create and play interactive quizzes</p>
-</header>
+<header><h1>Quiz Builder</h1></header>
 
-<div class="topbar">
-  <button class="dark-btn" onclick="darkMode()">
-    🌙 Dark Mode
-  </button>
+<div id="loginPage" class="box">
+    <h2>Login</h2>
+    <input id="loginUser" placeholder="Username">
+    <input id="loginPass" type="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <button onclick="show('signupPage')">Student Signup</button>
 </div>
 
-<main class="container">
+<div id="signupPage" class="box hide">
+    <h2>Student Signup</h2>
+    <input id="studentId" placeholder="Student ID">
+    <input id="studentName" placeholder="Student Name">
+    <input id="signUser" placeholder="Username">
+    <input id="signPass" type="password" placeholder="Password">
+    <button onclick="signup()">Create Account</button>
+    <button onclick="show('loginPage')">Back to Login</button>
+</div>
 
-  <section id="builder">
+<div id="adminPage" class="box hide">
+    <h2>Admin Module</h2>
 
-    <div class="card">
+    <input id="quizTitle" placeholder="Quiz Title">
+    <input id="quizTime" type="number" placeholder="Time in Minutes">
 
-      <h2>Quiz Details</h2>
+    <select id="type" onchange="changeType()">
+        <option value="mcq">Multiple Choice</option>
+        <option value="tf">True / False</option>
+        <option value="fill">Fill in the Blank</option>
+    </select>
 
-      <label>Quiz Title</label>
-      <input
-        id="title"
-        type="text"
-        placeholder="Enter quiz title"
-      >
+    <input id="question" placeholder="Enter Question">
+    <input id="marks" type="number" placeholder="Marks">
 
-      <label>Description</label>
-      <textarea
-        id="desc"
-        placeholder="Enter description"
-      ></textarea>
-
-      <label class="check">
-        <input
-          type="checkbox"
-          id="random"
-        >
-        Randomize questions
-      </label>
-
-      <label class="check">
-        <input
-          type="checkbox"
-          id="useTimer"
-        >
-        Enable timer
-      </label>
-
-      <input
-        id="minutes"
-        type="number"
-        value="10"
-        min="1"
-        placeholder="Minutes"
-      >
-
+    <div id="mcqFields">
+        <input id="op1" placeholder="Option A">
+        <input id="op2" placeholder="Option B">
+        <input id="op3" placeholder="Option C">
+        <input id="op4" placeholder="Option D">
+        <input id="correct" placeholder="Correct Answer A/B/C/D">
     </div>
 
-    <div class="card">
-
-      <h2 id="qHead">Add Question</h2>
-
-      <label>Question</label>
-
-      <textarea
-        id="qText"
-        placeholder="Enter question"
-      ></textarea>
-
-      <label>Question Type</label>
-
-      <select
-        id="qType"
-        onchange="typeUI()"
-      >
-
-        <option value="mcq">
-          Multiple Choice
-        </option>
-
-        <option value="tf">
-          True / False
-        </option>
-
-        <option value="open">
-          Open Ended
-        </option>
-
-      </select>
-
-      <div id="answers"></div>
-
-      <button
-        class="green"
-        onclick="saveQuestion()"
-      >
-        Add Question
-      </button>
-
-      <button
-        id="cancel"
-        class="gray hide"
-        onclick="cancelEdit()"
-      >
-        Cancel
-      </button>
-
+    <div id="tfFields" class="hide">
+        <select id="tfAnswer">
+            <option>True</option>
+            <option>False</option>
+        </select>
     </div>
 
-    <div class="card">
-
-      <h2>Quiz Preview</h2>
-
-      <div id="preview">
-        <p>No questions yet.</p>
-      </div>
-
+    <div id="fillFields" class="hide">
+        <input id="fillAnswer" placeholder="Correct Answer">
     </div>
 
-    <div class="card">
+    <button onclick="addQuestion()">Add Question</button>
+    <button onclick="saveQuiz()">Save Quiz</button>
+    <button onclick="showStudentModule()">Go To Student Module</button>
 
-      <h2>Quiz Actions</h2>
+    <h3>Added Questions</h3>
+    <div id="questionList"></div>
 
-      <button onclick="play()">
-        ▶ Play Quiz
-      </button>
+    <h3>Student Result History</h3>
+    <div id="history"></div>
 
-      <button
-        class="dark-btn"
-        onclick="share()"
-      >
-        🔗 Copy Share Link
-      </button>
+    <button onclick="logout()">Logout</button>
+</div>
 
-      <button
-        class="red"
-        onclick="clearQuiz()"
-      >
-        🗑 Clear Quiz
-      </button>
+<div id="userPage" class="box hide">
+    <h2>Student Module</h2>
 
-      <p id="msg"></p>
+    <input id="writeId" placeholder="Student ID">
+    <input id="writeName" placeholder="Student Name">
 
+    <h3>Available Quizzes</h3>
+    <div id="quizList"></div>
+
+    <h3>My Results</h3>
+    <div id="myResults"></div>
+
+    <button onclick="logout()">Logout</button>
+</div>
+
+<div id="quizPage" class="box hide">
+    <div class="top">
+        <h2 id="playTitle"></h2>
+        <b id="timer">Time: 00:00</b>
     </div>
 
-    <div class="card">
+    <p id="questionNumber"></p>
+    <h3 id="playQuestion"></h3>
+    <p id="questionMarks"></p>
 
-      <h2>Student Result History</h2>
+    <div id="playOptions"></div>
 
-      <div id="history">
-        <p>No results yet.</p>
-      </div>
+    <input id="fillInput" class="hide" placeholder="Write your answer">
 
-    </div>
-
-  </section>
-
-  <section
-    id="player"
-    class="hide"
-  >
-
-    <div class="card">
-
-      <div class="play-top">
-
-        <div>
-
-          <h2 id="playTitle"></h2>
-
-          <p id="playDesc"></p>
-
-        </div>
-
-        <div
-          id="timer"
-          class="timer"
-        >
-          00:00
-        </div>
-
-      </div>
-
-      <label>Student Name</label>
-
-      <input
-        id="studentName"
-        type="text"
-        placeholder="Enter student name"
-      >
-
-      <label>Student ID</label>
-
-      <input
-        id="studentId"
-        type="text"
-        placeholder="Enter student ID"
-      >
-
-      <div class="progress-wrap">
-
-        <div
-          id="bar"
-          class="progress-bar"
-        ></div>
-
-      </div>
-
-      <p
-        id="progress"
-        class="small"
-      >
-        Answered: 0
-      </p>
-
-      <div id="questionArea"></div>
-
-      <div class="navigation">
-
-        <button
-          id="prev"
-          class="gray"
-          onclick="prev()"
-        >
-          ← Previous
-        </button>
-
-        <button
-          id="next"
-          onclick="next()"
-        >
-          Next →
-        </button>
-
-        <button
-          id="submit"
-          class="green hide"
-          onclick="submitQuiz()"
-        >
-          ✓ Submit
-        </button>
-
-      </div>
-
-      <button
-        class="dark-btn"
-        onclick="back()"
-      >
-        ← Back
-      </button>
-
-    </div>
-
-    <div
-      id="result"
-      class="card hide"
-    ></div>
-
-  </section>
-
-</main>
+    <button onclick="submitAnswer()">Next</button>
+</div>
 
 <script src="script.js"></script>
-
 </body>
 </html>

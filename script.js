@@ -1,886 +1,372 @@
-let qs=[],edit=-1,current=null,idx=0,answers=[],timerId=null,seconds=0;
+let users=JSON.parse(localStorage.getItem("users"))||[];
+let quizzes=JSON.parse(localStorage.getItem("quizzes"))||[];
+let results=JSON.parse(localStorage.getItem("results"))||[];
 
-const $=id=>document.getElementById(id);
+results=results.filter(x=>x.studentId&&x.name&&x.quiz);
+localStorage.setItem("results",JSON.stringify(results));
 
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({
-  '&':'&amp;',
-  '<':'&lt;',
-  '>':'&gt;',
-  '"':'&quot;',
-  "'":'&#39;'
-}[c]));
+let questions=[];
+let currentQuiz=null;
+let currentQuestion=0;
+let obtainedMarks=0;
+let selected="";
+let timerInterval;
+let timeLeft=0;
+let currentStudent=null;
 
-function darkMode(){
-  document.body.classList.toggle('dark');
-  localStorage.setItem(
-    'dark',
-    document.body.classList.contains('dark')
-  );
+function get(id){
+    return document.getElementById(id);
 }
 
-function typeUI(){
-  let t=$('qType').value;
-
-  if(t==='open'){
-    $('answers').innerHTML=
-      '<input id="openAns" placeholder="Correct answer">';
-  }else{
-    let a=t==='tf'
-      ? ['True','False']
-      : ['','','',''];
-
-    $('answers').innerHTML=a.map((x,i)=>`
-      <div class="answer">
-        <input type="radio" name="ok" value="${i}">
-        <input class="ans" value="${esc(x)}" placeholder="Answer ${i+1}">
-      </div>
-    `).join('');
-  }
+function show(id){
+    document.querySelectorAll(".box").forEach(x=>x.classList.add("hide"));
+    get(id).classList.remove("hide");
 }
 
-function saveQuestion(){
-  let text=$('qText').value.trim();
-  let type=$('qType').value;
-  let q;
+function signup(){
+    let id=get("studentId").value.trim();
+    let name=get("studentName").value.trim();
+    let u=get("signUser").value.trim();
+    let p=get("signPass").value.trim();
 
-  if(!text)
-    return alert('Enter a question.');
+    if(!id||!name||!u||!p)
+        return alert("Fill all details");
 
-  if(type==='open'){
-    let a=$('openAns').value.trim();
+    if(users.some(x=>x.studentId===id))
+        return alert("Student ID already exists");
 
-    if(!a)
-      return alert('Enter the correct answer.');
+    if(users.some(x=>x.username===u))
+        return alert("Username already exists");
 
-    q={
-      text,
-      type,
-      answers:[a],
-      correct:0
+    users.push({
+        studentId:id,
+        name:name,
+        username:u,
+        password:p
+    });
+
+    localStorage.setItem("users",JSON.stringify(users));
+
+    alert("Signup successful");
+    show("loginPage");
+}
+
+function login(){
+    let u=get("loginUser").value.trim();
+    let p=get("loginPass").value.trim();
+
+    if(u==="admin"&&p==="admin123"){
+        show("adminPage");
+        showHistory();
+        return;
+    }
+
+    currentStudent=users.find(x=>x.username===u&&x.password===p);
+
+    if(!currentStudent)
+        return alert("Invalid username or password");
+
+    localStorage.setItem("currentUser",u);
+    show("userPage");
+
+    get("writeId").value=currentStudent.studentId;
+    get("writeName").value=currentStudent.name;
+
+    loadUserPage();
+}
+
+function changeType(){
+    let t=get("type").value;
+
+    get("mcqFields").classList.toggle("hide",t!=="mcq");
+    get("tfFields").classList.toggle("hide",t!=="tf");
+    get("fillFields").classList.toggle("hide",t!=="fill");
+}
+
+function addQuestion(){
+    let t=get("type").value;
+    let q=get("question").value.trim();
+    let m=Number(get("marks").value);
+
+    if(!q||m<=0)
+        return alert("Enter question and marks");
+
+    let obj={type:t,question:q,marks:m};
+
+    if(t==="mcq"){
+        let ops=[
+            get("op1").value.trim(),
+            get("op2").value.trim(),
+            get("op3").value.trim(),
+            get("op4").value.trim()
+        ];
+        let ans=get("correct").value.trim().toUpperCase();
+
+        if(ops.some(x=>!x))
+            return alert("Enter all options");
+
+        if(!["A","B","C","D"].includes(ans))
+            return alert("Answer must be A, B, C or D");
+
+        obj.options=ops;
+        obj.answer=ans;
+    }
+
+    if(t==="tf")
+        obj.answer=get("tfAnswer").value;
+
+    if(t==="fill"){
+        obj.answer=get("fillAnswer").value.trim().toLowerCase();
+
+        if(!obj.answer)
+            return alert("Enter correct answer");
+    }
+
+    questions.push(obj);
+
+    get("questionList").innerHTML=questions.map((x,i)=>
+        `<div>${i+1}. ${x.question} | ${x.type} | ${x.marks} Marks</div>`
+    ).join("");
+
+    get("question").value="";
+    get("marks").value="";
+    get("op1").value="";
+    get("op2").value="";
+    get("op3").value="";
+    get("op4").value="";
+    get("correct").value="";
+    get("fillAnswer").value="";
+}
+
+function saveQuiz(){
+    let title=get("quizTitle").value.trim();
+    let time=Number(get("quizTime").value);
+
+    if(!title||time<=0||!questions.length)
+        return alert("Enter quiz title, time and questions");
+
+    let total=questions.reduce((s,x)=>s+x.marks,0);
+
+    quizzes.push({
+        title:title,
+        time:time,
+        totalMarks:total,
+        questions:questions
+    });
+
+    localStorage.setItem("quizzes",JSON.stringify(quizzes));
+
+    alert("Quiz saved successfully\nTotal Marks: "+total);
+
+    questions=[];
+    get("questionList").innerHTML="";
+    get("quizTitle").value="";
+    get("quizTime").value="";
+
+    loadUserPage();
+}
+
+function showStudentModule(){
+    show("userPage");
+    loadUserPage();
+}
+
+function loadUserPage(){
+    quizzes=JSON.parse(localStorage.getItem("quizzes"))||[];
+
+    get("quizList").innerHTML=quizzes.length?
+        quizzes.map((x,i)=>`
+        <div>
+            <b>${x.title}</b><br>
+            Time: ${x.time} Minutes<br>
+            Total Marks: ${x.totalMarks}
+            <button onclick="startQuiz(${i})">PLAY QUIZ</button>
+        </div>`).join("")
+        :"No quizzes available";
+
+    showResults();
+}
+
+function showResults(){
+    let u=localStorage.getItem("currentUser");
+    let data=results.filter(x=>x.username===u);
+
+    get("myResults").innerHTML=data.length?
+        data.map(x=>`
+        <div>
+            Student ID: ${x.studentId}<br>
+            Name: ${x.name}<br>
+            Quiz: ${x.quiz}<br>
+            Marks: ${x.obtained}/${x.totalMarks}
+        </div>`).join("")
+        :"No results yet";
+}
+
+function startQuiz(i){
+    let id=get("writeId").value.trim();
+    let name=get("writeName").value.trim();
+
+    if(!id||!name)
+        return alert("Enter Student ID and Student Name");
+
+    currentStudent={
+        studentId:id,
+        name:name,
+        username:localStorage.getItem("currentUser")
     };
 
-  }else{
-    let a=[...document.querySelectorAll('.ans')]
-      .map(x=>x.value.trim());
+    currentQuiz=quizzes[i];
+    currentQuestion=0;
+    obtainedMarks=0;
+    selected="";
 
-    let ok=document.querySelector(
-      'input[name=ok]:checked'
-    );
+    timeLeft=currentQuiz.time*60;
 
-    if(a.some(x=>!x)||!ok)
-      return alert(
-        'Complete answers and choose the correct answer.'
-      );
+    clearInterval(timerInterval);
+    timerInterval=setInterval(updateTimer,1000);
 
-    q={
-      text,
-      type,
-      answers:a,
-      correct:+ok.value
-    };
-  }
-
-  if(edit<0)
-    qs.push(q);
-  else
-    qs[edit]=q;
-
-  edit=-1;
-  formReset();
-  render();
+    show("quizPage");
+    loadQuestion();
+    updateTimer();
 }
 
-function editQ(i){
-  let q=qs[i];
+function updateTimer(){
+    let min=Math.floor(timeLeft/60);
+    let sec=timeLeft%60;
 
-  edit=i;
+    get("timer").innerText=
+        "Time: "+String(min).padStart(2,"0")+":"+
+        String(sec).padStart(2,"0");
 
-  $('qText').value=q.text;
-  $('qType').value=q.type;
+    if(timeLeft<=0){
+        clearInterval(timerInterval);
+        finishQuiz();
+        return;
+    }
 
-  typeUI();
+    timeLeft--;
+}
 
-  setTimeout(()=>{
-    if(q.type==='open'){
-      $('openAns').value=q.answers[0];
-    }else{
-      document.querySelectorAll('.ans')
-        .forEach((x,n)=>{
-          x.value=q.answers[n];
+function loadQuestion(){
+    let q=currentQuiz.questions[currentQuestion];
+
+    get("playTitle").innerText=currentQuiz.title;
+
+    get("questionNumber").innerText=
+        "Question "+(currentQuestion+1)+
+        " of "+currentQuiz.questions.length;
+
+    get("playQuestion").innerText=q.question;
+    get("questionMarks").innerText="Marks: "+q.marks;
+
+    get("playOptions").innerHTML="";
+    get("fillInput").value="";
+    get("fillInput").classList.add("hide");
+
+    if(q.type==="mcq"){
+        q.options.forEach((x,i)=>{
+            let l=String.fromCharCode(65+i);
+
+            get("playOptions").innerHTML+=
+            `<button onclick="selectOption('${l}')">
+                ${l}. ${x}
+            </button>`;
         });
-
-      document.querySelectorAll(
-        'input[name=ok]'
-      ).forEach((x,n)=>{
-        x.checked=n===q.correct;
-      });
     }
-  },0);
 
-  $('qHead').textContent='Edit Question';
-  $('cancel').classList.remove('hide');
+    if(q.type==="tf"){
+        get("playOptions").innerHTML=
+        `<button onclick="selectOption('True')">True</button>
+         <button onclick="selectOption('False')">False</button>`;
+    }
 
-  window.scrollTo({
-    top:0,
-    behavior:'smooth'
-  });
+    if(q.type==="fill")
+        get("fillInput").classList.remove("hide");
 }
 
-function cancelEdit(){
-  edit=-1;
-  formReset();
+function selectOption(x){
+    selected=x;
 }
 
-function formReset(){
-  $('qText').value='';
-  $('qType').value='mcq';
-  typeUI();
-  $('qHead').textContent='Add Question';
-  $('cancel').classList.add('hide');
+function submitAnswer(){
+    let q=currentQuiz.questions[currentQuestion];
+    let answer=selected;
+
+    if(q.type==="fill")
+        answer=get("fillInput").value.trim().toLowerCase();
+
+    if(!answer)
+        return alert("Answer the question");
+
+    if(answer===q.answer)
+        obtainedMarks+=q.marks;
+
+    selected="";
+    currentQuestion++;
+
+    if(currentQuestion<currentQuiz.questions.length)
+        loadQuestion();
+    else
+        finishQuiz();
 }
 
-function delQ(i){
-  if(confirm('Delete this question?')){
-    qs.splice(i,1);
-    render();
-  }
-}
+function finishQuiz(){
+    clearInterval(timerInterval);
 
-function render(){
-  $('preview').innerHTML=
-    qs.length
-      ? qs.map((q,i)=>`
-        <div class="question">
-          <b>${i+1}. ${esc(q.text)}</b>
-          <p>
-            ${
-              q.type==='mcq'
-                ? 'Multiple Choice'
-                : q.type==='tf'
-                  ? 'True / False'
-                  : 'Open Ended'
-            }
-          </p>
-          <button onclick="editQ(${i})">Edit</button>
-          <button onclick="delQ(${i})" class="red">
-            Delete
-          </button>
-        </div>
-      `).join('')
-      : '<p>No questions yet.</p>';
-}
+    let total=currentQuiz.totalMarks;
 
-function quiz(){
-  return{
-    title:$('title').value.trim(),
-    description:$('desc').value.trim(),
-    random:$('random').checked,
-    timer:$('useTimer').checked,
-    minutes:+$('minutes').value||10,
-    questions:qs
-  };
-}
-
-function share(){
-  let q=quiz();
-
-  if(!q.title||!q.questions.length)
-    return alert('Create a quiz first.');
-
-  let s=btoa(
-    unescape(
-      encodeURIComponent(
-        JSON.stringify(q)
-      )
-    )
-  );
-
-  let link=
-    location.href.split('#')[0]+
-    '#quiz='+
-    s;
-
-  copy(link)
-    .then(()=>{
-      msg('Share link copied.');
-    })
-    .catch(()=>{
-      prompt(
-        'Copy this link:',
-        link
-      );
+    results.push({
+        studentId:currentStudent.studentId,
+        name:currentStudent.name,
+        username:currentStudent.username,
+        quiz:currentQuiz.title,
+        obtained:obtainedMarks,
+        totalMarks:total
     });
-}
 
-async function copy(t){
-  if(
-    navigator.clipboard &&
-    window.isSecureContext
-  ){
-    return navigator.clipboard.writeText(t);
-  }
-
-  let x=document.createElement('textarea');
-
-  x.value=t;
-  x.style.position='fixed';
-  x.style.left='-9999px';
-
-  document.body.appendChild(x);
-
-  x.focus();
-  x.select();
-
-  let ok=document.execCommand('copy');
-
-  x.remove();
-
-  if(!ok)
-    throw Error('copy');
-}
-
-function play(){
-  let q=quiz();
-
-  if(!q.title||!q.questions.length)
-    return alert('Create a quiz first.');
-
-  current=JSON.parse(
-    JSON.stringify(q)
-  );
-
-  if(current.random){
-    current.questions.sort(
-      ()=>Math.random()-.5
-    );
-  }
-
-  idx=0;
-
-  answers=
-    Array(
-      current.questions.length
-    ).fill(null);
-
-  $('builder').classList.add('hide');
-  $('player').classList.remove('hide');
-  $('result').classList.add('hide');
-
-  $('studentName').value='';
-  $('studentId').value='';
-
-  $('playTitle').textContent=
-    current.title;
-
-  $('playDesc').textContent=
-    current.description;
-
-  if(current.timer)
-    startTimer(
-      current.minutes*60
-    );
-  else
-    stopTimer();
-
-  showQ();
-}
-
-function showQ(){
-  let q=current.questions[idx];
-  let a=answers[idx];
-
-  let html=`
-    <div class="question">
-      <h3>
-        ${idx+1}. ${esc(q.text)}
-      </h3>
-  `;
-
-  if(q.type==='open'){
-    html+=`
-      <input
-        id="openPlayer"
-        value="${a==null?'':esc(a)}"
-        oninput="saveA()"
-        placeholder="Type your answer"
-      >
-    `;
-  }else{
-    html+=q.answers.map((x,i)=>`
-      <label class="option">
-
-        <input
-          type="radio"
-          name="pick"
-          value="${i}"
-          ${+a===i?'checked':''}
-          onchange="saveA()"
-        >
-
-        ${esc(x)}
-
-      </label>
-    `).join('');
-  }
-
-  $('questionArea').innerHTML=
-    html+'</div>';
-
-  $('prev').disabled=
-    idx===0;
-
-  $('next').classList.toggle(
-    'hide',
-    idx===current.questions.length-1
-  );
-
-  $('submit').classList.toggle(
-    'hide',
-    idx!==current.questions.length-1
-  );
-
-  progress();
-}
-
-function saveA(){
-  let q=current.questions[idx];
-
-  if(q.type==='open'){
-    answers[idx]=
-      $('openPlayer').value;
-  }else{
-    let x=
-      document.querySelector(
-        'input[name=pick]:checked'
-      );
-
-    answers[idx]=
-      x ? +x.value : null;
-  }
-
-  progress();
-}
-
-function prev(){
-  saveA();
-
-  if(idx>0){
-    idx--;
-    showQ();
-  }
-}
-
-function next(){
-  saveA();
-
-  if(idx<current.questions.length-1){
-    idx++;
-    showQ();
-  }
-}
-
-function progress(){
-  let n=
-    answers.filter(
-      x=>x!==null&&x!==''
-    ).length;
-
-  let p=
-    Math.round(
-      n/current.questions.length*100
-    );
-
-  $('bar').style.width=
-    p+'%';
-
-  $('progress').textContent=
-    `Answered: ${n}/${current.questions.length}`;
-}
-
-function submitQuiz(){
-
-  saveA();
-
-  let name=
-    $('studentName').value.trim();
-
-  let id=
-    $('studentId').value.trim();
-
-  if(!name||!id)
-    return alert(
-      'Enter Student Name and Student ID.'
-    );
-
-  if(!confirm('Submit quiz?'))
-    return;
-
-  stopTimer();
-
-  let rans=[];
-  let score=0;
-
-  current.questions.forEach((q,i)=>{
-
-    let a=answers[i];
-
-    let sa='Not answered';
-
-    let ca=q.answers[q.correct];
-
-    if(q.type==='open'){
-      if(a!=='')
-        sa=a;
-    }else if(a!==null){
-      sa=q.answers[a];
-    }
-
-    let ok=
-      q.type==='open'
-        ? String(a??'')
-            .trim()
-            .toLowerCase()===
-          String(ca)
-            .trim()
-            .toLowerCase()
-        : Number(a)===q.correct;
-
-    if(ok)
-      score++;
-
-    rans.push({
-      question:q.text,
-      student:sa,
-      correct:ca,
-      ok
-    });
-  });
-
-  let r={
-    name,
-    id,
-    quiz:current.title,
-    score,
-    total:current.questions.length,
-    percent:
-      Math.round(
-        score/current.questions.length*100
-      ),
-    time:new Date().toISOString(),
-    answers:rans
-  };
-
-  let h=
-    JSON.parse(
-      localStorage.getItem(
-        'results'
-      )||'[]'
-    );
-
-  h.push(r);
-
-  localStorage.setItem(
-    'results',
-    JSON.stringify(h)
-  );
-
-  showResult(r);
-  history();
-}
-
-function showResult(r){
-
-  $('result').classList.remove(
-    'hide'
-  );
-
-  $('result').innerHTML=`
-    <h2>Quiz Result</h2>
-
-    <p>
-      <b>Name:</b>
-      ${esc(r.name)}
-    </p>
-
-    <p>
-      <b>Student ID:</b>
-      ${esc(r.id)}
-    </p>
-
-    <p>
-      <b>Marks:</b>
-      ${r.score}/${r.total}
-    </p>
-
-    <p>
-      <b>Percentage:</b>
-      ${r.percent}%
-    </p>
-
-    <hr>
-
-    ${r.answers.map((a,i)=>`
-
-      <div
-        class="${a.ok?'correct':'wrong'}"
-      >
-
-        <b>
-          Q${i+1}.
-          ${esc(a.question)}
-        </b>
-
-        <p>
-          Your answer:
-          ${esc(a.student)}
-        </p>
-
-        <p>
-          Correct answer:
-          ${esc(a.correct)}
-        </p>
-
-        <b>
-          ${a.ok?'Correct':'Wrong'}
-        </b>
-
-      </div>
-
-    `).join('')}
-  `;
-
-  scrollTo(
-    0,
-    document.body.scrollHeight
-  );
-}
-
-function history(){
-
-  let h=
-    JSON.parse(
-      localStorage.getItem(
-        'results'
-      )||'[]'
-    );
-
-  $('history').innerHTML=
-    h.length
-      ? `
-        <table>
-
-          <tr>
-            <th>Name</th>
-            <th>ID</th>
-            <th>Quiz</th>
-            <th>Marks</th>
-            <th>%</th>
-          </tr>
-
-          ${h.slice().reverse().map(r=>`
-
-            <tr>
-
-              <td>
-                ${esc(r.name)}
-              </td>
-
-              <td>
-                ${esc(r.id)}
-              </td>
-
-              <td>
-                ${esc(r.quiz)}
-              </td>
-
-              <td>
-                ${r.score}/${r.total}
-              </td>
-
-              <td>
-                ${r.percent}%
-              </td>
-
-            </tr>
-
-          `).join('')}
-
-        </table>
-      `
-      : '<p>No results yet.</p>';
-}
-
-function startTimer(s){
-
-  stopTimer();
-
-  seconds=s;
-
-  $('timer').classList.remove(
-    'hide'
-  );
-
-  tick();
-
-  timerId=
-    setInterval(()=>{
-      seconds--;
-
-      tick();
-
-      if(seconds<=0){
-
-        stopTimer();
-
-        if(
-          !$('studentName').value.trim()||
-          !$('studentId').value.trim()
-        ){
-          return alert(
-            'Enter Student Name and Student ID.'
-          );
-        }
-
-        calculateAutoSubmit();
-      }
-
-    },1000);
-}
-
-function tick(){
-
-  $('timer').textContent=
-    String(
-      Math.floor(seconds/60)
-    ).padStart(2,'0')+
-    ':'+
-    String(
-      seconds%60
-    ).padStart(2,'0');
-
-  $('timer').classList.toggle(
-    'warn',
-    seconds<=60
-  );
-}
-
-function stopTimer(){
-
-  if(timerId){
-    clearInterval(timerId);
-    timerId=null;
-  }
-
-  $('timer').classList.add(
-    'hide'
-  );
-}
-
-function calculateAutoSubmit(){
-
-  saveA();
-
-  let name=
-    $('studentName').value.trim();
-
-  let id=
-    $('studentId').value.trim();
-
-  let score=0;
-  let rans=[];
-
-  current.questions.forEach(
-    (q,i)=>{
-
-      let a=answers[i];
-
-      let ca=
-        q.answers[q.correct];
-
-      let sa=
-        q.type==='open'
-          ? a||'Not answered'
-          : a==null
-            ? 'Not answered'
-            : q.answers[a];
-
-      let ok=
-        q.type==='open'
-          ? String(a||'')
-              .trim()
-              .toLowerCase()===
-            String(ca)
-              .trim()
-              .toLowerCase()
-          : Number(a)===q.correct;
-
-      if(ok)
-        score++;
-
-      rans.push({
-        question:q.text,
-        student:sa,
-        correct:ca,
-        ok
-      });
-
-    }
-  );
-
-  let r={
-    name,
-    id,
-    quiz:current.title,
-    score,
-    total:current.questions.length,
-    percent:
-      Math.round(
-        score/current.questions.length*100
-      ),
-    time:new Date().toISOString(),
-    answers:rans
-  };
-
-  let h=
-    JSON.parse(
-      localStorage.getItem(
-        'results'
-      )||'[]'
-    );
-
-  h.push(r);
-
-  localStorage.setItem(
-    'results',
-    JSON.stringify(h)
-  );
-
-  showResult(r);
-  history();
-}
-
-function back(){
-
-  stopTimer();
-
-  $('player').classList.add(
-    'hide'
-  );
-
-  $('builder').classList.remove(
-    'hide'
-  );
-
-  $('result').classList.add(
-    'hide'
-  );
-}
-
-function clearQuiz(){
-
-  if(
-    !confirm(
-      'Clear current quiz?'
-    )
-  )
-    return;
-
-  qs=[];
-
-  $('title').value='';
-  $('desc').value='';
-  $('random').checked=false;
-  $('useTimer').checked=false;
-
-  render();
-
-  msg('Quiz cleared.');
-}
-
-function msg(x){
-
-  $('msg').textContent=x;
-
-  setTimeout(
-    ()=>$('msg').textContent='',
-    2500
-  );
-}
-
-function loadLink(){
-
-  if(
-    !location.hash.startsWith(
-      '#quiz='
-    )
-  )
-    return;
-
-  try{
-
-    let q=
-      JSON.parse(
-        decodeURIComponent(
-          escape(
-            atob(
-              location.hash.slice(6)
-            )
-          )
-        )
-      );
-
-    $('title').value=
-      q.title||'';
-
-    $('desc').value=
-      q.description||'';
-
-    $('random').checked=
-      !!q.random;
-
-    $('useTimer').checked=
-      !!q.timer;
-
-    $('minutes').value=
-      q.minutes||10;
-
-    qs=
-      q.questions||[];
-
-    render();
-
-  }catch{
+    localStorage.setItem("results",JSON.stringify(results));
 
     alert(
-      'Invalid share link.'
+        "Quiz Completed!\n"+
+        "Student ID: "+currentStudent.studentId+
+        "\nName: "+currentStudent.name+
+        "\nMarks: "+obtainedMarks+"/"+total
     );
-  }
+
+    show("userPage");
+    loadUserPage();
 }
 
-$('useTimer')
-  .addEventListener(
-    'change',
-    ()=>{
-      $('minutes').style.display=
-        $('useTimer').checked
-          ? 'block'
-          : 'none';
+function showHistory(){
+    results=JSON.parse(localStorage.getItem("results"))||[];
+    results=results.filter(x=>x.studentId&&x.name&&x.quiz);
+
+    if(!results.length){
+        get("history").innerHTML="<p>No student results yet</p>";
+        return;
     }
-  );
 
-if(
-  localStorage.getItem('dark')===
-  'true'
-){
-  document.body.classList.add(
-    'dark'
-  );
+    get("history").innerHTML=`
+    <table>
+        <tr>
+            <th>Student ID</th>
+            <th>Name</th>
+            <th>Quiz</th>
+            <th>Marks</th>
+        </tr>
+        ${results.map(x=>`
+        <tr>
+            <td>${x.studentId}</td>
+            <td>${x.name}</td>
+            <td>${x.quiz}</td>
+            <td>${x.obtained}/${x.totalMarks}</td>
+        </tr>`).join("")}
+    </table>`;
 }
 
-$('minutes').style.display=
-  'none';
-
-typeUI();
-render();
-history();
-loadLink();
+function logout(){
+    clearInterval(timerInterval);
+    localStorage.removeItem("currentUser");
+    currentStudent=null;
+    show("loginPage");
+}
