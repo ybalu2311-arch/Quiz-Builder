@@ -6,105 +6,239 @@
 </head>
 <body>
 
-<header><h1>Quiz Builder</h1></header>
+<header>
+    <h1>Quiz Builder</h1>
+</header>
 
+<!-- LOGIN PAGE -->
 <div id="loginPage" class="box">
     <h2>Login</h2>
+
     <input id="loginUser" placeholder="Username">
     <input id="loginPass" type="password" placeholder="Password">
+
     <button onclick="login()">Login</button>
+
     <button onclick="show('signupPage')">Student Signup</button>
+
+    <button onclick="show('studentLoginPage')">
+        Student Login
+    </button>
 </div>
 
+
+<!-- STUDENT SIGNUP -->
 <div id="signupPage" class="box hide">
     <h2>Student Signup</h2>
+
     <input id="studentId" placeholder="Student ID">
     <input id="studentName" placeholder="Student Name">
     <input id="signUser" placeholder="Username">
     <input id="signPass" type="password" placeholder="Password">
+
     <button onclick="signup()">Create Account</button>
-    <button onclick="show('loginPage')">Back to Login</button>
+
+    <button onclick="show('loginPage')">
+        Back to Login
+    </button>
 </div>
 
+
+<!-- STUDENT LOGIN -->
+<div id="studentLoginPage" class="box hide">
+
+    <h2>Student Login</h2>
+
+    <input id="studentLoginUser" placeholder="Username">
+
+    <input id="studentLoginPass"
+           type="password"
+           placeholder="Password">
+
+    <button onclick="studentLogin()">
+        Student Login
+    </button>
+
+    <button onclick="show('loginPage')">
+        Back to Login
+    </button>
+
+</div>
+
+
+<!-- ADMIN MODULE -->
 <div id="adminPage" class="box hide">
+
     <h2>Admin Module</h2>
 
     <input id="quizTitle" placeholder="Quiz Title">
-    <input id="quizTime" type="number" placeholder="Time in Minutes">
+
+    <input id="quizTime"
+           type="number"
+           placeholder="Time in Minutes">
+
 
     <select id="type" onchange="changeType()">
-        <option value="mcq">Multiple Choice</option>
-        <option value="tf">True / False</option>
-        <option value="fill">Fill in the Blank</option>
+
+        <option value="mcq">
+            Multiple Choice
+        </option>
+
+        <option value="tf">
+            True / False
+        </option>
+
+        <option value="fill">
+            Fill in the Blank
+        </option>
+
     </select>
 
-    <input id="question" placeholder="Enter Question">
-    <input id="marks" type="number" placeholder="Marks">
 
+    <input id="question"
+           placeholder="Enter Question">
+
+    <input id="marks"
+           type="number"
+           placeholder="Marks">
+
+
+    <!-- MCQ -->
     <div id="mcqFields">
-        <input id="op1" placeholder="Option A">
-        <input id="op2" placeholder="Option B">
-        <input id="op3" placeholder="Option C">
-        <input id="op4" placeholder="Option D">
-        <input id="correct" placeholder="Correct Answer A/B/C/D">
+
+        <input id="op1"
+               placeholder="Option A">
+
+        <input id="op2"
+               placeholder="Option B">
+
+        <input id="op3"
+               placeholder="Option C">
+
+        <input id="op4"
+               placeholder="Option D">
+
+        <input id="correct"
+               placeholder="Correct Answer A/B/C/D">
+
     </div>
 
+
+    <!-- TRUE FALSE -->
     <div id="tfFields" class="hide">
+
         <select id="tfAnswer">
+
             <option>True</option>
+
             <option>False</option>
+
         </select>
+
     </div>
 
+
+    <!-- FILL -->
     <div id="fillFields" class="hide">
-        <input id="fillAnswer" placeholder="Correct Answer">
+
+        <input id="fillAnswer"
+               placeholder="Correct Answer">
+
     </div>
 
-    <button onclick="addQuestion()">Add Question</button>
-    <button onclick="saveQuiz()">Save Quiz</button>
-    <button onclick="showStudentModule()">Go To Student Module</button>
+
+    <button onclick="addQuestion()">
+        Add Question
+    </button>
+
+    <button onclick="saveQuiz()">
+        Save Quiz
+    </button>
+
 
     <h3>Added Questions</h3>
+
     <div id="questionList"></div>
 
+
     <h3>Student Result History</h3>
+
     <div id="history"></div>
 
-    <button onclick="logout()">Logout</button>
+
+    <button onclick="logout()">
+        Logout
+    </button>
+
 </div>
 
+
+<!-- STUDENT MODULE -->
 <div id="userPage" class="box hide">
+
     <h2>Student Module</h2>
 
-    <input id="writeId" placeholder="Student ID">
-    <input id="writeName" placeholder="Student Name">
+    <input id="writeId"
+           placeholder="Student ID">
+
+    <input id="writeName"
+           placeholder="Student Name">
+
 
     <h3>Available Quizzes</h3>
+
     <div id="quizList"></div>
 
+
     <h3>My Results</h3>
+
     <div id="myResults"></div>
 
-    <button onclick="logout()">Logout</button>
+
+    <button onclick="logout()">
+        Logout
+    </button>
+
 </div>
 
+
+<!-- QUIZ PAGE -->
 <div id="quizPage" class="box hide">
+
     <div class="top">
+
         <h2 id="playTitle"></h2>
-        <b id="timer">Time: 00:00</b>
+
+        <b id="timer">
+            Time: 00:00
+        </b>
+
     </div>
 
+
     <p id="questionNumber"></p>
+
     <h3 id="playQuestion"></h3>
+
     <p id="questionMarks"></p>
+
 
     <div id="playOptions"></div>
 
-    <input id="fillInput" class="hide" placeholder="Write your answer">
 
-    <button onclick="submitAnswer()">Next</button>
+    <input id="fillInput"
+           class="hide"
+           placeholder="Write your answer">
+
+
+    <button onclick="submitAnswer()">
+        Next
+    </button>
+
 </div>
 
+
 <script src="script.js"></script>
+
 </body>
 </html>
