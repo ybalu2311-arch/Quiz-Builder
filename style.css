@@ -1,99 +1,172 @@
-*{box-sizing:border-box}
+*{
+    box-sizing:border-box;
+}
+
 
 body{
+
     margin:0;
+
     font-family:Arial;
+
     background:#eef8ee;
 }
 
+
 header{
+
     background:#75b798;
+
     color:white;
+
     text-align:center;
+
     padding:18px;
 }
 
+
 .box{
+
     width:90%;
+
     max-width:650px;
+
     margin:30px auto;
+
     padding:25px;
+
     background:white;
+
     border-radius:12px;
-    box-shadow:0 3px 10px #b8d8c0;
+
+    box-shadow:
+        0 3px 10px #b8d8c0;
 }
+
 
 input,select{
+
     width:100%;
+
     padding:11px;
+
     margin:6px 0;
-    border:1px solid #a8cdb2;
+
+    border:
+        1px solid #a8cdb2;
+
     border-radius:6px;
+
     font-size:16px;
 }
 
+
 button{
+
     width:100%;
+
     padding:11px;
+
     margin:6px 0;
+
     border:0;
+
     border-radius:6px;
+
     background:#75b798;
+
     color:white;
+
     font-size:16px;
+
     cursor:pointer;
 }
 
+
 button:hover{
+
     background:#5d9f80;
 }
 
+
 .hide{
+
     display:none;
 }
 
+
 #questionList div,
+
 #quizList div,
+
 #myResults div{
+
     background:#edf7ef;
+
     padding:12px;
+
     margin:8px 0;
+
     border-radius:6px;
 }
 
+
 .top{
+
     display:flex;
+
     justify-content:space-between;
+
     align-items:center;
+
     gap:15px;
 }
 
+
 #timer{
+
     background:#e1f1e5;
+
     padding:10px;
+
     border-radius:6px;
 }
 
+
 #playOptions{
+
     display:flex;
+
     flex-direction:column;
 }
 
+
 #history{
+
     overflow-x:auto;
 }
 
+
 table{
+
     width:100%;
+
     border-collapse:collapse;
 }
 
+
 th,td{
-    border:1px solid #b8d8c0;
+
+    border:
+        1px solid #b8d8c0;
+
     padding:9px;
+
     text-align:center;
 }
 
+
 th{
+
     background:#dcefe2;
 }
