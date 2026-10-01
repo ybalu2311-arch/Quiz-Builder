@@ -2,21 +2,11 @@ let users=JSON.parse(localStorage.getItem("users"))||[];
 let quizzes=JSON.parse(localStorage.getItem("quizzes"))||[];
 let results=JSON.parse(localStorage.getItem("results"))||[];
 
-results=results.filter(x=>x.studentId&&x.name&&x.quiz);
-localStorage.setItem("results",JSON.stringify(results));
-
-let questions=[];
-let currentQuiz=null;
-let currentQuestion=0;
-let obtainedMarks=0;
-let selected="";
-let timerInterval;
-let timeLeft=0;
+let questions=[],currentQuiz=null,currentQuestion=0;
+let obtainedMarks=0,selected="",timerInterval,timeLeft=0;
 let currentStudent=null;
 
-function get(id){
-    return document.getElementById(id);
-}
+function get(id){return document.getElementById(id)}
 
 function show(id){
     document.querySelectorAll(".box").forEach(x=>x.classList.add("hide"));
@@ -29,26 +19,17 @@ function signup(){
     let u=get("signUser").value.trim();
     let p=get("signPass").value.trim();
 
-    if(!id||!name||!u||!p)
-        return alert("Fill all details");
-
+    if(!id||!name||!u||!p)return alert("Fill all details");
     if(users.some(x=>x.studentId===id))
         return alert("Student ID already exists");
-
     if(users.some(x=>x.username===u))
         return alert("Username already exists");
 
-    users.push({
-        studentId:id,
-        name:name,
-        username:u,
-        password:p
-    });
-
+    users.push({studentId:id,name:name,username:u,password:p});
     localStorage.setItem("users",JSON.stringify(users));
 
     alert("Signup successful");
-    show("loginPage");
+    show("studentLoginPage");
 }
 
 function login(){
@@ -58,13 +39,29 @@ function login(){
     if(u==="admin"&&p==="admin123"){
         show("adminPage");
         showHistory();
-        return;
+    }else{
+        alert("Invalid admin login. Use Student Login for students.");
     }
+}
 
-    currentStudent=users.find(x=>x.username===u&&x.password===p);
+function studentLogin(){
+    let u=get("studentLoginUser").value.trim();
+    let p=get("studentLoginPass").value.trim();
 
-    if(!currentStudent)
-        return alert("Invalid username or password");
+    if(u==="student"&&p==="student123"){
+        currentStudent={
+            studentId:"STUDENT",
+            name:"Student",
+            username:"student"
+        };
+    }else{
+        currentStudent=users.find(
+            x=>x.username===u&&x.password===p
+        );
+
+        if(!currentStudent)
+            return alert("Invalid student username or password");
+    }
 
     localStorage.setItem("currentUser",u);
     show("userPage");
@@ -88,28 +85,25 @@ function addQuestion(){
     let q=get("question").value.trim();
     let m=Number(get("marks").value);
 
-    if(!q||m<=0)
-        return alert("Enter question and marks");
+    if(!q||m<=0)return alert("Enter question and marks");
 
     let obj={type:t,question:q,marks:m};
 
     if(t==="mcq"){
-        let ops=[
+        obj.options=[
             get("op1").value.trim(),
             get("op2").value.trim(),
             get("op3").value.trim(),
             get("op4").value.trim()
         ];
-        let ans=get("correct").value.trim().toUpperCase();
 
-        if(ops.some(x=>!x))
+        obj.answer=get("correct").value.trim().toUpperCase();
+
+        if(obj.options.some(x=>!x))
             return alert("Enter all options");
 
-        if(!["A","B","C","D"].includes(ans))
+        if(!["A","B","C","D"].includes(obj.answer))
             return alert("Answer must be A, B, C or D");
-
-        obj.options=ops;
-        obj.answer=ans;
     }
 
     if(t==="tf")
@@ -123,19 +117,22 @@ function addQuestion(){
     }
 
     questions.push(obj);
+    displayQuestions();
+    clearQuestionFields();
+}
 
-    get("questionList").innerHTML=questions.map((x,i)=>
+function displayQuestions(){
+    get("questionList").innerHTML=questions.map(
+        (x,i)=>
         `<div>${i+1}. ${x.question} | ${x.type} | ${x.marks} Marks</div>`
     ).join("");
+}
 
-    get("question").value="";
-    get("marks").value="";
-    get("op1").value="";
-    get("op2").value="";
-    get("op3").value="";
-    get("op4").value="";
-    get("correct").value="";
-    get("fillAnswer").value="";
+function clearQuestionFields(){
+    [
+        "question","marks","op1","op2",
+        "op3","op4","correct","fillAnswer"
+    ].forEach(id=>get(id).value="");
 }
 
 function saveQuiz(){
@@ -162,13 +159,6 @@ function saveQuiz(){
     get("questionList").innerHTML="";
     get("quizTitle").value="";
     get("quizTime").value="";
-
-    loadUserPage();
-}
-
-function showStudentModule(){
-    show("userPage");
-    loadUserPage();
 }
 
 function loadUserPage(){
@@ -219,7 +209,6 @@ function startQuiz(i){
     currentQuestion=0;
     obtainedMarks=0;
     selected="";
-
     timeLeft=currentQuiz.time*60;
 
     clearInterval(timerInterval);
@@ -251,7 +240,6 @@ function loadQuestion(){
     let q=currentQuiz.questions[currentQuestion];
 
     get("playTitle").innerText=currentQuiz.title;
-
     get("questionNumber").innerText=
         "Question "+(currentQuestion+1)+
         " of "+currentQuiz.questions.length;
@@ -295,8 +283,7 @@ function submitAnswer(){
     if(q.type==="fill")
         answer=get("fillInput").value.trim().toLowerCase();
 
-    if(!answer)
-        return alert("Answer the question");
+    if(!answer)return alert("Answer the question");
 
     if(answer===q.answer)
         obtainedMarks+=q.marks;
@@ -313,15 +300,13 @@ function submitAnswer(){
 function finishQuiz(){
     clearInterval(timerInterval);
 
-    let total=currentQuiz.totalMarks;
-
     results.push({
         studentId:currentStudent.studentId,
         name:currentStudent.name,
         username:currentStudent.username,
         quiz:currentQuiz.title,
         obtained:obtainedMarks,
-        totalMarks:total
+        totalMarks:currentQuiz.totalMarks
     });
 
     localStorage.setItem("results",JSON.stringify(results));
@@ -330,7 +315,7 @@ function finishQuiz(){
         "Quiz Completed!\n"+
         "Student ID: "+currentStudent.studentId+
         "\nName: "+currentStudent.name+
-        "\nMarks: "+obtainedMarks+"/"+total
+        "\nMarks: "+obtainedMarks+"/"+currentQuiz.totalMarks
     );
 
     show("userPage");
@@ -339,7 +324,10 @@ function finishQuiz(){
 
 function showHistory(){
     results=JSON.parse(localStorage.getItem("results"))||[];
-    results=results.filter(x=>x.studentId&&x.name&&x.quiz);
+
+    results=results.filter(
+        x=>x.studentId&&x.name&&x.quiz
+    );
 
     if(!results.length){
         get("history").innerHTML="<p>No student results yet</p>";
@@ -354,6 +342,7 @@ function showHistory(){
             <th>Quiz</th>
             <th>Marks</th>
         </tr>
+
         ${results.map(x=>`
         <tr>
             <td>${x.studentId}</td>
